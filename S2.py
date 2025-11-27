@@ -13,8 +13,8 @@
 #-----------------------------------------------------------------------------#
 # 1. IMPORTAÇÃO DAS BIBLIOTECAS
 #-----------------------------------------------------------------------------#
-import numpy as np 
-import OttoCycle as oc 
+import numpy as np
+import OttoCycle as oc
 import pandas as pd
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
