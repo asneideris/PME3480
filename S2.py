@@ -81,3 +81,79 @@ xb3 = dados_exp[:, 3]  # xb3 (fourth column)
 #-----------------------------------------------------------------------------#
 # 4. LOOP PRINCIPAL DE SIMULAÇÃO E CÁLCULOS
 #-----------------------------------------------------------------------------#
+
+#-----------------------------------------------------------------------------#
+# 5. AJUSTE DA FUNÇÃO DE WIEBE (Responsabilidade: Matheus)
+#-----------------------------------------------------------------------------#
+
+# Definição da Função de Wiebe teórica para o ajuste
+# x = theta (CAD), a = eficiência, m = forma, th_soc = início, duration = duração
+def wiebe_model(theta, a, m, th_soc, duration):
+    # Previne divisão por zero ou potências inválidas
+    theta_norm = (theta - th_soc) / duration
+    
+    # A função deve retornar 0 antes do SOC e 1 após o fim (SOC+duration)
+    # Usamos np.where para vetorizar essa lógica condicional
+    val = 1.0 - np.exp(-a * (theta_norm ** (m + 1.0)))
+    
+    val = np.where(theta < th_soc, 0.0, val) # Antes da combustão é 0
+    val = np.where(theta > (th_soc + duration), 1.0, val) # Depois é 1
+    return val
+
+# Lista para armazenar os parâmetros ajustados dos 3 casos
+# Formato: [ [a1, m1, SOC1, EOC1], [a2, m2, SOC2, EOC2], ... ]
+wiebe_params_list = []
+
+# Loop para ajustar as 3 curvas (xb1, xb2, xb3)
+# Note que i+1 é usado apenas para printar "Caso 1, 2, 3"
+curvas_xb = [xb1, xb2, xb3]
+
+print("\n--- INICIANDO AJUSTE DE PARÂMETROS WIEBE ---")
+
+for i, xb_exp in enumerate(curvas_xb):
+    # 1. Filtragem de dados: O otimizador funciona melhor se pegarmos apenas
+    # a região onde a combustão está realmente ocorrendo (ex: 0.1% a 99.9%)
+    # Isso evita que ele se perca nos infinitos zeros ou uns.
+    mask = (xb_exp > 0.001) & (xb_exp < 0.999)
+    
+    cad_fit = cad[mask]
+    xb_fit  = xb_exp[mask]
+    
+    # 2. Chute inicial (Initial Guess) - Ajuda o solver a não convergir para algo absurdo
+    # a=5, m=2, soc=-10, duration=40 é um chute padrão razoável
+    p0 = [5.0, 2.0, -15.0, 50.0] 
+    
+    # 3. Limites (Bounds) - [minimos], [maximos]
+    # a>0, m>0, soc entre -50 e 0, duração entre 10 e 100
+    bounds = ([0.1, 0.1, -60.0, 10.0], [20.0, 10.0, 10.0, 120.0])
+    
+    # 4. Otimização
+    try:
+        popt, pcov = curve_fit(wiebe_model, cad_fit, xb_fit, p0=p0, bounds=bounds)
+        
+        a_opt, m_opt, soc_opt, dur_opt = popt
+        eoc_opt = soc_opt + dur_opt
+        
+        # Armazena para o Felipe usar depois
+        wiebe_params_list.append({
+            'a': a_opt,
+            'm': m_opt,
+            'SOC_deg': soc_opt,
+            'EOC_deg': eoc_opt,
+            'duration': dur_opt
+        })
+        
+        print(f"--> Caso {i+1} ajustado:")
+        print(f"    a = {a_opt:.4f}")
+        print(f"    m (input) = {m_opt:.4f}  [OBS: No simulador usa-se mWF = m_input]")
+        print(f"    SOC = {soc_opt:.2f}° | EOC = {eoc_opt:.2f}° | Duração = {dur_opt:.2f}°")
+        
+        # Comentado: Plot rápido de validação/prova (apenas se rodar local, não trava o script)
+        # plt.plot(cad, xb_exp, 'k.', label='Exp')
+        # plt.plot(cad, wiebe_model(cad, *popt), 'r-', label='Fit')
+        # plt.show()
+
+    except RuntimeError:
+        print(f"ERRO: Não foi possível ajustar a curva {i+1}.")
+
+print("---------------------------------------------------\n")
