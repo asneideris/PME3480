@@ -186,14 +186,14 @@ dados_simulacao = {
 # Loop principal: Roda o OttoCycle para cada conjunto de parâmetros Wiebe descobertos
 for i, params in enumerate(wiebe_params_list):
     print(f"--> Simulando Caso {i+1}...")
-    
+
     # 6.2. Conversão de unidades
     # OttoCycle requer em radianos
     a_fit = params['a']
     m_fit = params['m']
     SOC_rad = params['SOC_deg'] * (np.pi / 180.0)
     EOC_rad = params['EOC_deg'] * (np.pi / 180.0)
-    
+
     # 6.3. Montagem da tupla 'pars'
     # rv=10 e Texh foram definidos no início
     pars = (
@@ -211,15 +211,15 @@ for i, params in enumerate(wiebe_params_list):
         pexh, Texh,    # Exaustão
         phi, fuel      # Mistura
     )
-    
+
     # 6.4. Execução do Solver (Cálculo de Pressão e Temperatura)
     # oc.ottoCycle retorna: Volume, Massa, Temperatura, Pressão
     V_sim, m_sim, T_sim, p_sim = oc.ottoCycle(Th, pars)
-    
+
     # 6.5. Cálculo da Fração Queimada (xb)
     # Faz-se necessário chamar essa função explicitamente pois o ottoCycle não devolve o xb
     xb_sim, dxb_sim = oc.wiebeFunction(Th, pars)
-    
+
     # Armazena no dicionário do caso
     caso_dict = {
         'id': i+1,
@@ -230,7 +230,7 @@ for i, params in enumerate(wiebe_params_list):
         'pars': pars,     # Salva os parâmetros usados para referência
         'wiebe_data': params # Salva os dados brutos do ajuste (a, m, soc, eoc em graus)
     }
-    
+
     dados_simulacao['casos'].append(caso_dict)
 
 #-----------------------------------------------------------------------------#
