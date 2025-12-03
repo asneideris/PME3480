@@ -18,11 +18,9 @@ import OttoCycle as oc
 import pandas as pd
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
-import cantera as ct # Adicionado para configurar o Cantera
-import os # Adicionado para configurar o Cantera
+import cantera as ct
+import os
 
-# Adicionar o diretório de trabalho atual ao caminho de busca do Cantera
-# Isso ajuda a encontrar arquivos como 'Air.yaml' e 'gri30.yaml'
 ct.add_directory(os.getcwd())
 #-----------------------------------------------------------------------------#
 #=============================================================================#
